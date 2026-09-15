@@ -2,15 +2,52 @@
 
 Este projeto é parte da Atividade Prática 14 – Distribuída e Bancos de Dados em Big Data. O objetivo é implementar uma solução eficiente para buscar e analisar dados de um e-commerce em tempo real, utilizando bancos de dados distribuídos (NoSQL) e pipelines de processamento.
 
-## Pré-requisitos
+---
 
-O ambiente foi configurado para rodar nativamente no macOS. Certifique-se de ter os seguintes gerenciadores instalados:
-- **Homebrew** (para serviços do sistema)
-- **uv** (para gerenciamento de dependências Python)
+## Passo a passo de configuração
 
-## Instalação e Configuração
+Siga os passos abaixo **na ordem apresentada** para configurar o ambiente do zero.
 
-### 1. MongoDB (Armazenamento NoSQL)
+---
+
+### Passo 1 – Instalar as dependências Python
+
+Após clonar o repositório, instale o ambiente virtual e todas as dependências Python (PySpark, PyMongo, Elasticsearch, etc.) com o `uv`:
+
+```bash
+uv sync
+```
+
+> **Pré-requisito:** o `uv` precisa estar instalado. Caso não tenha, instale com:
+> ```bash
+> curl -LsSf https://astral.sh/uv/install.sh | sh
+> ```
+
+---
+
+### Passo 2 – Extrair os dados
+
+Os dados sintéticos do projeto (produtos, clientes, transações e avaliações) pesam centenas de megabytes e estão compactados. Extraia o arquivo ZIP na raiz do projeto — ele criará a pasta `dados/` automaticamente:
+
+```bash
+unzip ecommerce_bigdata_1_65_milhao_documentos.zip
+```
+
+---
+
+### Passo 3 – Instalar os serviços via Homebrew
+
+O projeto roda nativamente no **macOS e Linux**. Em ambos os sistemas, utilizamos o **Homebrew** como gerenciador de pacotes.
+
+> **Pré-requisito:** o **Homebrew** precisa estar instalado. Ele funciona tanto no macOS quanto no Linux. Caso não tenha, instale com:
+> ```bash
+> /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+> ```
+> No Linux, após instalar, adicione o Homebrew ao PATH conforme instruído no terminal.
+
+> **Usuários Linux (alternativa):** se preferir usar o gerenciador de pacotes nativo da sua distro (apt, dnf, pacman, etc.), os serviços abaixo também estão disponíveis nos repositórios oficiais. Consulte a documentação de cada um para a instalação via pacote nativo.
+
+#### 3.1 MongoDB (Armazenamento NoSQL)
 Utilizado para gerenciar os grandes volumes de dados brutos do e-commerce.
 
 ```bash
@@ -24,9 +61,7 @@ brew install mongodb-community
 brew services start mongodb-community
 ```
 
-*(Para parar o serviço futuramente, use: `brew services stop mongodb-community`)*
-
-### 2. OpenSearch (Busca Distribuída)
+#### 3.2 OpenSearch (Busca Distribuída)
 Utilizado para o sistema de busca rápida de produtos e avaliações. (Substituto compatível do Elasticsearch)
 
 ```bash
@@ -37,9 +72,7 @@ brew install opensearch
 brew services start opensearch
 ```
 
-*(Para parar o serviço futuramente, use: `brew services stop opensearch`)*
-
-### 3. Prometheus (Coletor de Métricas)
+#### 3.3 Prometheus (Coletor de Métricas)
 Utilizado para monitoramento e coleta de métricas do sistema e da API.
 
 ```bash
@@ -47,7 +80,7 @@ Utilizado para monitoramento e coleta de métricas do sistema e da API.
 brew install prometheus
 ```
 
-### 4. Grafana (Dashboard de Monitoramento)
+#### 3.4 Grafana (Dashboard de Monitoramento)
 Utilizado para visualizar as métricas coletadas pelo Prometheus.
 
 ```bash
@@ -58,61 +91,33 @@ brew install grafana
 brew services start grafana
 ```
 
-*(Para parar o serviço futuramente, use: `brew services stop grafana`)*
+---
 
-### 5. Ambiente Python
-O projeto utiliza o `uv` para gerenciar dependências. Após clonar o projeto, instale o ambiente virtual e todas as dependências (PySpark, PyMongo, Elasticsearch, etc.) executando:
+## Passo 4 – Iniciar o projeto
 
-```bash
-uv sync
-```
+Com os serviços instalados e os dados extraídos, basta rodar o script de inicialização:
 
-## Dados
-Os dados sintéticos do projeto (compostos de produtos, clientes, transações e avaliações) pesam em torno de centenas de megabytes. Por isso, eles foram compactados. 
-
-Antes de rodar qualquer passo abaixo, certifique-se de extrair o arquivo ZIP na raiz do projeto (ele já criará a pasta `dados/` automaticamente):
-```bash
-# Extraia o arquivo zip antes de rodar os scripts
-unzip ecommerce_bigdata_1_65_milhao_documentos.zip
-```
-
-Para popular o MongoDB com a massa de dados inicial, certifique-se de que o MongoDB esteja rodando e execute o script em Python incluído no projeto:
-
-```bash
-# Executar a ingestão no MongoDB
-uv run importar_dados.py
-```
-
-### Motor de Busca (OpenSearch)
-Após popular o MongoDB, você precisa indexar os produtos no OpenSearch para o sistema de busca rápida. Execute o script de indexação:
-
-```bash
-# Sincroniza os produtos do MongoDB com o OpenSearch
-uv run indexar_opensearch.py
-```
-
-### Processamento Distribuído (Apache Spark)
-Para processar e analisar o enorme volume de dados de transações, criamos um script utilizando o **PySpark**. O script lê os dados brutos e efetua agregações (ex: produtos que mais faturaram, volume de transações por meio de pagamento).
-
-```bash
-# Roda a análise de Big Data com PySpark
-uv run analise_spark.py
-```
-
-## Subindo o Projeto (Modo Fácil)
-
-Como a infraestrutura tem vários serviços (banco de dados, motor de busca, coletor de métricas, dashboard e API), eu criei dois scripts mágicos que você ou seu professor podem rodar na raiz do projeto:
-
-### 1. Iniciar Tudo
-Para ligar toda a infraestrutura e a API de uma vez só:
 ```bash
 ./iniciar_projeto.sh
 ```
-*Ao final do script, ele já vai manter a API rodando no seu terminal (acesse `http://localhost:8000/docs`).*
 
-### 2. Parar Tudo
-Quando você terminar de apresentar ou testar o trabalho, abra outra aba do terminal e rode:
+**Na primeira execução**, o script detecta que os dados ainda não foram carregados e faz tudo automaticamente:
+1. Importa os dados no MongoDB
+2. Indexa os produtos no OpenSearch
+3. Roda a análise com Apache Spark
+
+**Nas execuções seguintes**, essas etapas são puladas e a API sobe direto.
+
+*A API ficará disponível em `http://localhost:8000/docs`.*
+
+---
+
+## Encerrando o projeto
+
+Quando terminar, rode em outro terminal:
+
 ```bash
 ./parar_projeto.sh
 ```
-*Isso vai garantir que nenhum serviço do banco de dados ou monitoramento fique rodando oculto no fundo e gastando bateria do seu Mac.*
+
+*Isso garante que nenhum serviço fique rodando oculto em segundo plano.*

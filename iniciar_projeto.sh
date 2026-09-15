@@ -25,7 +25,38 @@ echo " - Prometheus: http://localhost:9090"
 echo " - OpenSearch: http://localhost:9200"
 echo "=========================================="
 
-echo "🌐 5. Subindo a API do E-commerce (FastAPI)..."
+# ── Carga de dados (roda apenas na primeira vez) ───────────────────────────
+
+if [ ! -f .flag_dados_importados ]; then
+    echo "📥 Importando dados no MongoDB (primeira execução)..."
+    uv run importar_dados.py && touch .flag_dados_importados
+else
+    echo "✅ MongoDB já populado — pulando importação."
+fi
+
+if [ ! -f .flag_opensearch_indexado ]; then
+    echo "🔎 Indexando produtos no OpenSearch (primeira execução)..."
+    echo "⏳ Aguardando OpenSearch inicializar..."
+    until curl -s http://localhost:9200 > /dev/null 2>&1; do
+        printf "."
+        sleep 2
+    done
+    echo " ✓ OpenSearch pronto!"
+    uv run indexar_opensearch.py && touch .flag_opensearch_indexado
+else
+    echo "✅ OpenSearch já indexado — pulando indexação."
+fi
+
+if [ ! -f .flag_spark_analisado ]; then
+    echo "⚡ Rodando análise com Apache Spark (primeira execução)..."
+    uv run analise_spark.py && touch .flag_spark_analisado
+else
+    echo "✅ Análise Spark já realizada — pulando."
+fi
+
+echo "=========================================="
+
+echo "🌐 Subindo a API do E-commerce (FastAPI)..."
 echo "Pressione CTRL+C a qualquer momento para parar a API."
 echo "Para acessar a aplicação abra: http://localhost:8000"
 

@@ -22,3 +22,5 @@ dados/*.jsonl
 *.log
 data/
 
+# Flags de controle de execução local (geradas pelo iniciar_projeto.sh)
+.flag_*
